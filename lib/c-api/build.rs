@@ -419,12 +419,15 @@ fn build_inline_c_env_vars() {
         L = shared_object_dir.clone(),
     );
 
-    // Add `-lwasmer_c_api` and, on Linux,
-    // `-rpath=<shared_object_dir>`, to the linker argument.
     println!(
-        "cargo:rustc-env=INLINE_C_RS_LDFLAGS=-lwasmer_c_api,{rpath}",
-        rpath = if cfg!(target_os = "linux") {
-            format!("-rpath={}", shared_object_dir)
+        "cargo:rustc-env=INLINE_C_RS_LDFLAGS={shared_object_dir}/libwasmer_c_api.{ext}",
+        shared_object_dir = shared_object_dir,
+        ext = if cfg!(target_os = "linux") {
+            "so".to_string()
+        } else if cfg!(target_os = "macos") {
+            "dylib".to_string()
+        } else if cfg!(target_os = "windows") {
+            "dll".to_string()
         } else {
             "".to_string()
         },
