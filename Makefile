@@ -3,11 +3,13 @@ ifneq ($(OS), Windows_NT)
 	ARCH := $(shell uname -m)
 	UNAME_S := $(shell uname -s)
 	LIBC ?= $(shell ldd 2>&1 | grep -o musl | head -n1)
+	TARGET ?= $(CARGO_BUILD_TARGET)
 else
 	# We can assume, if in windows it will likely be in x86_64
 	ARCH := x86_64
 	UNAME_S :=
 	LIBC ?=
+	TARGET ?= $(CARGO_BUILD_TARGET)
 endif
 
 # Which compilers we build. These have dependencies that may not be on the system.
@@ -103,11 +105,18 @@ ifneq (, $(LIBC))
 $(info C standard library: $(bold)$(green)$(LIBC)$(reset))
 endif
 
+ifneq (, $(TARGET))
+$(info Target: $(bold)$(green)$(TARGET)$(reset))
+endif
+
 $(info Host target: $(bold)$(green)$(HOST_TARGET)$(reset))
 $(info Available compilers: $(bold)$(green)${compilers}$(reset))
 $(info Compilers features: $(bold)$(green)${compiler_features}$(reset))
 $(info Available compilers + engines for test: $(bold)$(green)${test_compilers_engines}$(reset))
 
+ifneq (,$(TARGET))
+	TARGET := $(TARGET)/
+endif
 
 ############
 # Building #
@@ -335,13 +344,13 @@ package-wapm:
 	mkdir -p "package/bin"
 ifneq ($(OS), Windows_NT)
 	if [ -d "wapm-cli" ]; then \
-		cp wapm-cli/target/release/wapm package/bin/ ;\
+		cp wapm-cli/target/$(TARGET)release/wapm package/bin/ ;\
 		echo "#!/bin/bash\nwapm execute \"\$$@\"" > package/bin/wax ;\
 		chmod +x package/bin/wax ;\
 	fi
 else
 	if [ -d "wapm-cli" ]; then \
-		cp wapm-cli/target/release/wapm package/bin/ ;\
+		cp wapm-cli/target/$(TARGET)release/wapm package/bin/ ;\
 	fi
 ifeq ($(UNAME_S), Darwin)
 	codesign -s - package/bin/wapm
@@ -362,9 +371,9 @@ endif
 package-wasmer:
 	mkdir -p "package/bin"
 ifeq ($(OS), Windows_NT)
-	cp target/release/wasmer.exe package/bin/
+	cp target/$(TARGET)release/wasmer.exe package/bin/
 else
-	cp target/release/wasmer package/bin/
+	cp target/$(TARGET)release/wasmer package/bin/
 ifeq ($(UNAME_S), Darwin)
 	codesign -s - package/bin/wasmer
 endif
@@ -377,25 +386,29 @@ package-capi:
 	cp lib/c-api/wasmer_wasm.h* package/include
 	cp lib/c-api/wasm.h* package/include
 	cp lib/c-api/README.md package/include/README.md
-ifeq ($(OS), Windows_NT)
-	cp target/release/wasmer_c_api.dll package/lib/wasmer.dll
-	cp target/release/wasmer_c_api.lib package/lib/wasmer.lib
-else
-ifeq ($(UNAME_S), Darwin)
+
+	# Windows
+	if [ -f target/$(TARGET)release/wasmer_c_api.dll ]; then \
+		cp target/$(TARGET)release/wasmer_c_api.dll package/lib/wasmer.dll ;\
+	fi
+	if [ -f target/$(TARGET)release/wasmer_c_api.lib ]; then \
+		cp target/$(TARGET)release/wasmer_c_api.lib package/lib/wasmer.lib ;\
+	fi
+
+	# Darwin
 	# For some reason in macOS arm64 there are issues if we copy constantly in the install_name_tool util
 	rm -f package/lib/libwasmer.dylib
-	cp target/release/libwasmer_c_api.dylib package/lib/libwasmer.dylib
-	cp target/release/libwasmer_c_api.a package/lib/libwasmer.a
-	# Fix the rpath for the dylib
-	install_name_tool -id "@rpath/libwasmer.dylib" package/lib/libwasmer.dylib
-else
-	# In some cases the .so may not be available, for example when building against musl (static linking)
-	if [ -f target/release/libwasmer_c_api.so ]; then \
-		cp target/release/libwasmer_c_api.so package/lib/libwasmer.so ;\
-	fi;
-	cp target/release/libwasmer_c_api.a package/lib/libwasmer.a
-endif
-endif
+	if [ -f target/$(TARGET)release/libwasmer_c_api.dylib ]; then \
+		cp target/$(TARGET)release/libwasmer_c_api.dylib package/lib/libwasmer.dylib ;\
+		install_name_tool -id "@rpath/libwasmer.dylib" package/lib/libwasmer.dylib ;\
+	fi
+
+	if [ -f target/$(TARGET)release/libwasmer_c_api.so ]; then \
+		cp target/$(TARGET)release/libwasmer_c_api.so package/lib/libwasmer.so ;\
+	fi
+	if [ -f target/$(TARGET)release/libwasmer_c_api.a ]; then \
+		cp target/$(TARGET)release/libwasmer_c_api.a package/lib/libwasmer.a ;\
+	fi
 
 package-docs: build-docs build-docs-capi
 	mkdir -p "package/docs"
