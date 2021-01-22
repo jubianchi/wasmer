@@ -275,6 +275,15 @@
 <span id="272">272</span>
 <span id="273">273</span>
 <span id="274">274</span>
+<span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">super</span>::<span class="ident">frame_info</span>::{<span class="ident">FrameInfo</span>, <span class="ident">GlobalFrameInfo</span>, <span class="ident">FRAME_INFO</span>};
 <span class="kw">use</span> <span class="ident">backtrace</span>::<span class="ident">Backtrace</span>;
@@ -482,6 +491,15 @@
                 <span class="ident">inner</span>: <span class="ident">Arc</span>::<span class="ident">new</span>(<span class="ident">inner</span>),
             }),
             <span class="prelude-val">Err</span>(<span class="ident">inner</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Err</span>(<span class="self">Self</span> { <span class="ident">inner</span> }),
+        }
+    }
+
+    <span class="doccomment">/// Returns trap code, if it&#39;s a Trap</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_trap</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">TrapCode</span><span class="op">&gt;</span> {
+        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">RuntimeErrorSource</span>::<span class="ident">Trap</span>(<span class="ident">trap_code</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">source</span> {
+            <span class="prelude-val">Some</span>(<span class="ident">trap_code</span>)
+        } <span class="kw">else</span> {
+            <span class="prelude-val">None</span>
         }
     }
 

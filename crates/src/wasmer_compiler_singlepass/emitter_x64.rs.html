@@ -1400,6 +1400,10 @@
 <span id="1397">1397</span>
 <span id="1398">1398</span>
 <span id="1399">1399</span>
+<span id="1400">1400</span>
+<span id="1401">1401</span>
+<span id="1402">1402</span>
+<span id="1403">1403</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">x64_decl</span>::{<span class="ident">GPR</span>, <span class="ident">XMM</span>};
 <span class="kw">use</span> <span class="ident">dynasm</span>::<span class="ident">dynasm</span>;
@@ -1520,6 +1524,7 @@
     <span class="kw">fn</span> <span class="ident">emit_xchg</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">sz</span>: <span class="ident">Size</span>, <span class="ident">src</span>: <span class="ident">Location</span>, <span class="ident">dst</span>: <span class="ident">Location</span>);
     <span class="kw">fn</span> <span class="ident">emit_lock_xadd</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">sz</span>: <span class="ident">Size</span>, <span class="ident">src</span>: <span class="ident">Location</span>, <span class="ident">dst</span>: <span class="ident">Location</span>);
     <span class="kw">fn</span> <span class="ident">emit_lock_cmpxchg</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">sz</span>: <span class="ident">Size</span>, <span class="ident">src</span>: <span class="ident">Location</span>, <span class="ident">dst</span>: <span class="ident">Location</span>);
+    <span class="kw">fn</span> <span class="ident">emit_rep_stosq</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>);
 
     <span class="kw">fn</span> <span class="ident">emit_btc_gpr_imm8_32</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">src</span>: <span class="ident">u8</span>, <span class="ident">dst</span>: <span class="ident">GPR</span>);
     <span class="kw">fn</span> <span class="ident">emit_btc_gpr_imm8_64</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">src</span>: <span class="ident">u8</span>, <span class="ident">dst</span>: <span class="ident">GPR</span>);
@@ -2579,6 +2584,9 @@
         }
     }
 
+    <span class="kw">fn</span> <span class="ident">emit_rep_stosq</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) {
+        <span class="macro">dynasm</span><span class="macro">!</span>(<span class="self">self</span> ; <span class="ident">rep</span> <span class="ident">stosq</span>);
+    }
     <span class="kw">fn</span> <span class="ident">emit_btc_gpr_imm8_32</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">src</span>: <span class="ident">u8</span>, <span class="ident">dst</span>: <span class="ident">GPR</span>) {
         <span class="macro">dynasm</span><span class="macro">!</span>(<span class="self">self</span> ; <span class="ident">btc</span> <span class="ident">Rd</span>(<span class="ident">dst</span> <span class="kw">as</span> <span class="ident">u8</span>), <span class="ident">BYTE</span> <span class="ident">src</span> <span class="kw">as</span> <span class="ident">i8</span>);
     }

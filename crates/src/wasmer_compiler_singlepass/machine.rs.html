@@ -523,14 +523,50 @@
 <span id="520">520</span>
 <span id="521">521</span>
 <span id="522">522</span>
+<span id="523">523</span>
+<span id="524">524</span>
+<span id="525">525</span>
+<span id="526">526</span>
+<span id="527">527</span>
+<span id="528">528</span>
+<span id="529">529</span>
+<span id="530">530</span>
+<span id="531">531</span>
+<span id="532">532</span>
+<span id="533">533</span>
+<span id="534">534</span>
+<span id="535">535</span>
+<span id="536">536</span>
+<span id="537">537</span>
+<span id="538">538</span>
+<span id="539">539</span>
+<span id="540">540</span>
+<span id="541">541</span>
+<span id="542">542</span>
+<span id="543">543</span>
+<span id="544">544</span>
+<span id="545">545</span>
+<span id="546">546</span>
+<span id="547">547</span>
+<span id="548">548</span>
+<span id="549">549</span>
+<span id="550">550</span>
+<span id="551">551</span>
+<span id="552">552</span>
+<span id="553">553</span>
+<span id="554">554</span>
+<span id="555">555</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">common_decl</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">emitter_x64</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">x64_decl</span>::{<span class="ident">new_machine_state</span>, <span class="ident">X64Register</span>};
 <span class="kw">use</span> <span class="ident">smallvec</span>::<span class="ident">smallvec</span>;
 <span class="kw">use</span> <span class="ident">smallvec</span>::<span class="ident">SmallVec</span>;
+<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">cmp</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">collections</span>::<span class="ident">HashSet</span>;
 <span class="kw">use</span> <span class="ident">wasmer_compiler</span>::<span class="ident">wasmparser</span>::<span class="ident">Type</span> <span class="kw">as</span> <span class="ident">WpType</span>;
+
+<span class="kw">const</span> <span class="ident">NATIVE_PAGE_SIZE</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">4096</span>;
 
 <span class="kw">struct</span> <span class="ident">MachineStackOffset</span>(<span class="ident">usize</span>);
 
@@ -973,17 +1009,47 @@
             }
         }
 
-        <span class="comment">// Initialize all normal locals to zero.</span>
-        <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="ident">n_params</span>..<span class="ident">n</span> {
-            <span class="ident">a</span>.<span class="ident">emit_mov</span>(<span class="ident">Size</span>::<span class="ident">S64</span>, <span class="ident">Location</span>::<span class="ident">Imm32</span>(<span class="number">0</span>), <span class="ident">locations</span>[<span class="ident">i</span>]);
-        }
-
         <span class="comment">// Load vmctx into R15.</span>
         <span class="ident">a</span>.<span class="ident">emit_mov</span>(
             <span class="ident">Size</span>::<span class="ident">S64</span>,
             <span class="self">Self</span>::<span class="ident">get_param_location</span>(<span class="number">0</span>),
             <span class="ident">Location</span>::<span class="ident">GPR</span>(<span class="ident">GPR</span>::<span class="ident">R15</span>),
         );
+
+        <span class="comment">// Stack probe.</span>
+        <span class="comment">//</span>
+        <span class="comment">// `rep stosq` writes data from low address to high address and may skip the stack guard page.</span>
+        <span class="comment">// so here we probe it explicitly when needed.</span>
+        <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> (<span class="ident">n_params</span>..<span class="ident">n</span>).<span class="ident">step_by</span>(<span class="ident">NATIVE_PAGE_SIZE</span> <span class="op">/</span> <span class="number">8</span>).<span class="ident">skip</span>(<span class="number">1</span>) {
+            <span class="ident">a</span>.<span class="ident">emit_mov</span>(<span class="ident">Size</span>::<span class="ident">S64</span>, <span class="ident">Location</span>::<span class="ident">Imm32</span>(<span class="number">0</span>), <span class="ident">locations</span>[<span class="ident">i</span>]);
+        }
+
+        <span class="comment">// Initialize all normal locals to zero.</span>
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">init_stack_loc_cnt</span> <span class="op">=</span> <span class="number">0</span>;
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">last_stack_loc</span> <span class="op">=</span> <span class="ident">Location</span>::<span class="ident">Memory</span>(<span class="ident">GPR</span>::<span class="ident">RBP</span>, <span class="ident">i32</span>::<span class="ident">MAX</span>);
+        <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="ident">n_params</span>..<span class="ident">n</span> {
+            <span class="kw">match</span> <span class="ident">locations</span>[<span class="ident">i</span>] {
+                <span class="ident">Location</span>::<span class="ident">Memory</span>(<span class="kw">_</span>, <span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                    <span class="ident">init_stack_loc_cnt</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+                    <span class="ident">last_stack_loc</span> <span class="op">=</span> <span class="ident">cmp</span>::<span class="ident">min</span>(<span class="ident">last_stack_loc</span>, <span class="ident">locations</span>[<span class="ident">i</span>]);
+                }
+                <span class="ident">Location</span>::<span class="ident">GPR</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                    <span class="ident">a</span>.<span class="ident">emit_mov</span>(<span class="ident">Size</span>::<span class="ident">S64</span>, <span class="ident">Location</span>::<span class="ident">Imm32</span>(<span class="number">0</span>), <span class="ident">locations</span>[<span class="ident">i</span>]);
+                }
+                <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable</span><span class="macro">!</span>(),
+            }
+        }
+        <span class="kw">if</span> <span class="ident">init_stack_loc_cnt</span> <span class="op">&gt;</span> <span class="number">0</span> {
+            <span class="comment">// Since these assemblies take up to 24 bytes, if more than 2 slots are initialized, then they are smaller.</span>
+            <span class="ident">a</span>.<span class="ident">emit_mov</span>(
+                <span class="ident">Size</span>::<span class="ident">S64</span>,
+                <span class="ident">Location</span>::<span class="ident">Imm64</span>(<span class="ident">init_stack_loc_cnt</span> <span class="kw">as</span> <span class="ident">u64</span>),
+                <span class="ident">Location</span>::<span class="ident">GPR</span>(<span class="ident">GPR</span>::<span class="ident">RCX</span>),
+            );
+            <span class="ident">a</span>.<span class="ident">emit_xor</span>(<span class="ident">Size</span>::<span class="ident">S64</span>, <span class="ident">Location</span>::<span class="ident">GPR</span>(<span class="ident">GPR</span>::<span class="ident">RAX</span>), <span class="ident">Location</span>::<span class="ident">GPR</span>(<span class="ident">GPR</span>::<span class="ident">RAX</span>));
+            <span class="ident">a</span>.<span class="ident">emit_lea</span>(<span class="ident">Size</span>::<span class="ident">S64</span>, <span class="ident">last_stack_loc</span>, <span class="ident">Location</span>::<span class="ident">GPR</span>(<span class="ident">GPR</span>::<span class="ident">RDI</span>));
+            <span class="ident">a</span>.<span class="ident">emit_rep_stosq</span>();
+        }
 
         <span class="comment">// Add the size of all locals allocated to stack.</span>
         <span class="self">self</span>.<span class="ident">stack_offset</span>.<span class="number">0</span> <span class="op">+</span><span class="op">=</span> <span class="ident">static_area_size</span> <span class="op">-</span> <span class="ident">callee_saved_regs_size</span>;

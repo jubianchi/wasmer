@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["Machine",""],["MachineStackOffset",""]]});
+initSidebarItems({"constant":[["NATIVE_PAGE_SIZE",""]],"struct":[["Machine",""],["MachineStackOffset",""]]});
