@@ -222,9 +222,9 @@ pub fn ___syscall42(ctx: &EmEnv, _which: c_int, mut varargs: VarArgs) -> c_int {
     let fd_ptr = fd_vec.as_mut_ptr();
 
     // call pipe and store the pointers in this array
-    #[cfg(target_os = "windows")]
+    #[cfg(all(target_os = "windows", target_env = "msvc"))]
     let result: c_int = unsafe { libc::pipe(fd_ptr, 2048, 0) };
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(all(not(target_os = "windows"), not(target_env = "msvc")))]
     let result: c_int = unsafe { libc::pipe(fd_ptr) };
     if result == -1 {
         debug!("=> os error: {}", Error::last_os_error());

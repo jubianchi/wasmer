@@ -5,19 +5,19 @@ use libc::{c_char, c_int};
 use std::mem;
 use std::time::SystemTime;
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(all(not(target_os = "windows"), not(target_env = "msvc")))]
 use libc::{clockid_t, time as libc_time, timegm as libc_timegm, tm as libc_tm};
-#[cfg(not(target_os = "windows"))]
+#[cfg(all(not(target_os = "windows"), not(target_env = "msvc")))]
 use std::ffi::CString;
 
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", target_env = "msvc"))]
 use libc::time_t;
 
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", target_env = "msvc"))]
 #[allow(non_camel_case_types)]
 type clockid_t = c_int;
 
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", target_env = "msvc"))]
 extern "C" {
     #[link_name = "time"]
     pub fn libc_time(s: *const time_t) -> time_t;
@@ -43,11 +43,11 @@ const CLOCK_MONOTONIC: clockid_t = 1;
 const CLOCK_MONOTONIC_COARSE: clockid_t = 6;
 
 // some assumptions about the constants when targeting windows
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", target_env = "msvc"))]
 const CLOCK_REALTIME: clockid_t = 0;
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", target_env = "msvc"))]
 const CLOCK_MONOTONIC: clockid_t = 1;
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", target_env = "msvc"))]
 const CLOCK_MONOTONIC_COARSE: clockid_t = 6;
 
 /// emscripten: _gettimeofday
@@ -336,7 +336,7 @@ pub fn _ctime(ctx: &EmEnv, time_p: u32) -> u32 {
 }
 
 /// emscripten: _timegm
-#[cfg(not(target_os = "windows"))]
+#[cfg(all(not(target_os = "windows"), not(target_env = "msvc")))]
 #[allow(clippy::cast_ptr_alignment)]
 pub fn _timegm(ctx: &EmEnv, time_ptr: u32) -> i32 {
     debug!("emscripten::_timegm {}", time_ptr);
@@ -377,7 +377,7 @@ pub fn _timegm(ctx: &EmEnv, time_ptr: u32) -> i32 {
     }
 }
 
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", target_env = "msvc"))]
 pub fn _timegm(_ctx: &EmEnv, _time_ptr: c_int) -> i32 {
     debug!(
         "emscripten::_timegm - UNIMPLEMENTED IN WINDOWS {}",

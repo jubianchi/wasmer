@@ -50,7 +50,7 @@ impl Mmap {
     /// Create a new `Mmap` pointing to `accessible_size` bytes of page-aligned accessible memory,
     /// within a reserved mapping of `mapping_size` bytes. `accessible_size` and `mapping_size`
     /// must be native page-size multiples.
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(all(not(target_os = "windows"), not(target_env = "msvc")))]
     pub fn accessible_reserved(
         accessible_size: usize,
         mapping_size: usize,
@@ -119,7 +119,7 @@ impl Mmap {
     /// Create a new `Mmap` pointing to `accessible_size` bytes of page-aligned accessible memory,
     /// within a reserved mapping of `mapping_size` bytes. `accessible_size` and `mapping_size`
     /// must be native page-size multiples.
-    #[cfg(target_os = "windows")]
+    #[cfg(all(target_os = "windows", target_env = "msvc"))]
     pub fn accessible_reserved(
         accessible_size: usize,
         mapping_size: usize,
@@ -181,7 +181,7 @@ impl Mmap {
     /// Make the memory starting at `start` and extending for `len` bytes accessible.
     /// `start` and `len` must be native page-size multiples and describe a range within
     /// `self`'s reserved memory.
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(all(not(target_os = "windows"), not(target_env = "msvc")))]
     pub fn make_accessible(&mut self, start: usize, len: usize) -> Result<(), String> {
         let page_size = region::page::size();
         assert_eq!(start & (page_size - 1), 0);
@@ -198,7 +198,7 @@ impl Mmap {
     /// Make the memory starting at `start` and extending for `len` bytes accessible.
     /// `start` and `len` must be native page-size multiples and describe a range within
     /// `self`'s reserved memory.
-    #[cfg(target_os = "windows")]
+    #[cfg(all(target_os = "windows", target_env = "msvc"))]
     pub fn make_accessible(&mut self, start: usize, len: usize) -> Result<(), String> {
         use winapi::ctypes::c_void;
         use winapi::um::memoryapi::VirtualAlloc;
@@ -259,7 +259,7 @@ impl Mmap {
 }
 
 impl Drop for Mmap {
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(all(not(target_os = "windows"), not(target_env = "msvc")))]
     fn drop(&mut self) {
         if self.len != 0 {
             let r = unsafe { libc::munmap(self.ptr as *mut libc::c_void, self.len) };
@@ -267,7 +267,7 @@ impl Drop for Mmap {
         }
     }
 
-    #[cfg(target_os = "windows")]
+    #[cfg(all(target_os = "windows", target_env = "msvc"))]
     fn drop(&mut self) {
         if self.len != 0 {
             use winapi::ctypes::c_void;

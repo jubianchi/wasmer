@@ -146,7 +146,7 @@ pub unsafe fn allocate_cstr_on_stack<'a>(ctx: &'a EmEnv, s: &str) -> (u32, &'a [
     (offset, slice)
 }
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(all(not(target_os = "windows"), not(target_env = "msvc")))]
 pub unsafe fn copy_terminated_array_of_cstrs(_ctx: &EmEnv, cstrs: *mut *mut c_char) -> u32 {
     let _total_num = {
         let mut ptr = cstrs;
@@ -198,11 +198,11 @@ pub unsafe fn copy_stat_into_wasm(ctx: &EmEnv, buf: u32, stat: &stat) {
     (*stat_ptr).__st_rdev_padding = 0;
     (*stat_ptr).st_size = stat.st_size as _;
     (*stat_ptr).st_blksize = 4096;
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(all(not(target_os = "windows"), not(target_env = "msvc")))]
     {
         (*stat_ptr).st_blocks = stat.st_blocks as _;
     }
-    #[cfg(target_os = "windows")]
+    #[cfg(all(target_os = "windows", target_env = "msvc"))]
     {
         (*stat_ptr).st_blocks = 0;
     }

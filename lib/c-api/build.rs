@@ -564,8 +564,10 @@ fn build_inline_c_env_vars() {
     println!(
         "cargo:rustc-env=INLINE_C_RS_LDFLAGS={shared_object_dir}/{lib}",
         shared_object_dir = shared_object_dir,
-        lib = if cfg!(target_os = "windows") {
+        lib = if cfg!(target_os = "windows") && cfg!(target_env = "msvc") {
             "wasmer_c_api.dll".to_string()
+        } else if cfg!(target_os = "windows") && cfg!(target_env = "gnu") {
+            "libwasmer_c_api.a".to_string()
         } else if cfg!(target_os = "macos") {
             "libwasmer_c_api.dylib".to_string()
         } else {
