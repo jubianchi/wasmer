@@ -138,10 +138,8 @@ jobs:
         shell: bash
       - name: Setup Rust target
         run: |
-          cat << EOF > .cargo/config.toml
-          [build]
-          target = "${{ matrix.target }}"
-          EOF
+          echo "[build]" > .cargo/config.toml
+          echo "target = \"${{ matrix.target }}\"" >> .cargo/config.toml
         if: matrix.target
       - name: Set sccache port
         run: |
