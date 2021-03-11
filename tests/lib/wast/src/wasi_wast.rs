@@ -35,11 +35,11 @@ fn get_stdout_output(wasi_state: &WasiState) -> anyhow::Result<String> {
         .downcast_ref::<OutputCapturerer>()
         .unwrap();
     let stdout_str = std::str::from_utf8(&stdout.output)?;
-    #[cfg(target_os = "windows")]
+    #[cfg(all(target_os = "windows", target_env = "msvc"))]
     // normalize line endings
     return Ok(stdout_str.replace("\r\n", "\n"));
 
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(all(not(target_os = "windows"), not(target_env = "msvc")))]
     return Ok(stdout_str.to_string());
 }
 
@@ -50,11 +50,11 @@ fn get_stderr_output(wasi_state: &WasiState) -> anyhow::Result<String> {
         .unwrap();
     let stderr_str = std::str::from_utf8(&stderr.output)?;
 
-    #[cfg(target_os = "windows")]
+    #[cfg(all(target_os = "windows", target_env = "msvc"))]
     // normalize line endings
     return Ok(stderr_str.replace("\r\n", "\n"));
 
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(all(not(target_os = "windows"), not(target_env = "msvc")))]
     return Ok(stderr_str.to_string());
 }
 

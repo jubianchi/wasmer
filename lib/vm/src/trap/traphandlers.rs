@@ -276,7 +276,7 @@ cfg_if::cfg_if! {
                 }
             }
         }
-    } else if #[cfg(target_os = "windows")] {
+    } else if #[cfg(all(target_os = "windows", target_env = "msvc"))] {
         use winapi::um::errhandlingapi::*;
         use winapi::um::winnt::*;
         use winapi::um::minwinbase::*;
@@ -405,7 +405,7 @@ pub unsafe fn resume_panic(payload: Box<dyn Any + Send>) -> ! {
     tls::with(|info| info.unwrap().unwind_with(UnwindReason::Panic(payload)))
 }
 
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", target_env = "msvc"))]
 fn reset_guard_page() {
     extern "C" {
         fn _resetstkoflw() -> winapi::ctypes::c_int;
@@ -418,7 +418,7 @@ fn reset_guard_page() {
     }
 }
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(all(not(target_os = "windows"), not(target_env = "msvc")))]
 fn reset_guard_page() {}
 
 /// Stores trace message with backtrace.
