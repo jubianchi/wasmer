@@ -1172,7 +1172,7 @@ cfg_if::cfg_if! {
                 self.instance().as_ref().signal_handler.set(Some(Box::new(handler)));
             }
         }
-    } else if #[cfg(target_os = "windows")] {
+    } else if #[cfg(all(target_os = "windows", target_env = "msvc"))] {
         pub type SignalHandler = dyn Fn(winapi::um::winnt::PEXCEPTION_POINTERS) -> bool;
 
         impl InstanceHandle {

@@ -1,8 +1,8 @@
 use libc::{abort, c_int, exit, EAGAIN};
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(all(not(target_os = "windows"), not(target_env = "msvc")))]
 type PidT = libc::pid_t;
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", target_env = "msvc"))]
 type PidT = c_int;
 
 use crate::EmEnv;

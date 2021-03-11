@@ -38,41 +38,46 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build: [linux-x64, macos-x64, macos-arm64, windows-x64, linux-aarch64]
         include:
-          - build: linux-x64
-            os: ubuntu-18.04
-            rust: 1.49
-            llvm_url: 'https://github.com/wasmerio/llvm-custom-builds/releases/download/11.x/linux-amd64.tar.gz'
-            artifact_name: 'wasmer-linux-amd64'
-            cross_compilation_artifact_name: 'cross_compiled_from_linux'
-            run_integration_tests: true
-          - build: macos-x64
-            os: macos-latest
-            rust: 1.49
-            llvm_url: 'https://github.com/wasmerio/llvm-custom-builds/releases/download/11.x/darwin-amd64.tar.gz'
-            artifact_name: 'wasmer-darwin-amd64'
-            cross_compilation_artifact_name: 'cross_compiled_from_mac'
-            run_integration_tests: true
-          - build: macos-arm64
-            os: macos-11.0
-            rust: 1.49
-            target: aarch64-apple-darwin
-            artifact_name: 'wasmer-darwin-arm64'
-          - build: windows-x64
+#          - build: linux-x64
+#            os: ubuntu-18.04
+#            rust: 1.49
+#            llvm_url: 'https://github.com/wasmerio/llvm-custom-builds/releases/download/11.x/linux-amd64.tar.gz'
+#            artifact_name: 'wasmer-linux-amd64'
+#            cross_compilation_artifact_name: 'cross_compiled_from_linux'
+#            run_integration_tests: true
+#          - build: macos-x64
+#            os: macos-latest
+#            rust: 1.49
+#            llvm_url: 'https://github.com/wasmerio/llvm-custom-builds/releases/download/11.x/darwin-amd64.tar.gz'
+#            artifact_name: 'wasmer-darwin-amd64'
+#            cross_compilation_artifact_name: 'cross_compiled_from_mac'
+#            run_integration_tests: true
+#          - build: macos-arm64
+#            os: macos-11.0
+#            rust: 1.49
+#            target: aarch64-apple-darwin
+#            artifact_name: 'wasmer-darwin-arm64'
+#          - build: windows-x64
+#            os: windows-latest
+#            rust: 1.49
+#            # llvm_url: 'https://github.com/wasmerio/llvm-custom-builds/releases/download/11.x/windows-amd64.tar.gz'
+#            artifact_name: 'wasmer-windows-amd64'
+#            cross_compilation_artifact_name: 'cross_compiled_from_win'
+#            run_integration_tests: true
+          - build: windows-mingw-x64
             os: windows-latest
             rust: 1.49
+            target: x86_64-pc-windows-gnu
             # llvm_url: 'https://github.com/wasmerio/llvm-custom-builds/releases/download/11.x/windows-amd64.tar.gz'
-            artifact_name: 'wasmer-windows-amd64'
-            cross_compilation_artifact_name: 'cross_compiled_from_win'
             run_integration_tests: true
-          - build: linux-aarch64
-            os: [self-hosted, linux, ARM64]
-            random_sccache_port: true
-            rust: 1.49
-            llvm_url: 'https://github.com/wasmerio/llvm-custom-builds/releases/download/11.x/linux-aarch64.tar.gz'
-            artifact_name: 'wasmer-linux-aarch64'
-            run_integration_tests: false
+#          - build: linux-aarch64
+#            os: [self-hosted, linux, ARM64]
+#            random_sccache_port: true
+#            rust: 1.49
+#            llvm_url: 'https://github.com/wasmerio/llvm-custom-builds/releases/download/11.x/linux-aarch64.tar.gz'
+#            artifact_name: 'wasmer-linux-aarch64'
+#            run_integration_tests: false
     env:
       CARGO_SCCACHE_VERSION: 0.2.14-alpha.0-parity
       SCCACHE_AZURE_BLOB_CONTAINER: wasmerstoragesccacheblob
@@ -138,10 +143,8 @@ jobs:
         shell: bash
       - name: Setup Rust target
         run: |
-          cat << EOF > .cargo/config.toml
-          [build]
-          target = "${{ matrix.target }}"
-          EOF
+          echo '[build]' > .cargo/config.toml
+          echo 'target = "${{ matrix.target }}"' >> .cargo/config.toml
         if: matrix.target
       - name: Set sccache port
         run: |
@@ -229,6 +232,7 @@ jobs:
         if: matrix.target
       - name: Dist
         run: |
+          ls -lha target/release
           make distribution
       - name: Run integration tests (Windows)
         shell: cmd
